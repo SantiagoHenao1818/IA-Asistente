@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEXUS AI - Asistente Inteligente</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+  <div class="app-shell">
+
+    <!-- BARRA LATERAL -->
+    <aside class="sidebar">
+
+      <div class="brand">
+        <div class="brand-mark">N</div>
+
+        <div class="brand-name">
+          NEXUS AI
+          <span class="brand-caption">WORKSPACE · PROTOTIPO</span>
+        </div>
+      </div>
+
+      <p class="side-label">Espacio de trabajo</p>
+
+      <nav>
+        <a class="side-link active" href="#chat">◈ Asistente</a>
+        <a class="side-link" href="#fuentes">▤ Base de conocimiento</a>
+        <a class="side-link" href="#ayuda">↗ Centro de ayuda</a>
+      </nav>
+
+      <div class="sidebar-note">
+        <strong>Diseñado para verificar</strong>
+        Las respuestas deben poder revisarse, corregirse y escalarse cuando sea necesario.
+      </div>
+
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main id="chat">
+
+      <header class="topbar">
+        <div class="breadcrumb">
+          Workspace / Asistente
+        </div>
+
+        <div class="profile">
+          <span>Entorno de demostración</span>
+          <div class="avatar">U</div>
+        </div>
+      </header>
+
+      <section class="intro">
+
+        <div class="eyebrow">
+          Tu asistente de conocimiento
+        </div>
+
+        <h1>¿En qué puedo ayudarte?</h1>
+
+        <p>
+          Consulta información del equipo y revisa siempre de dónde provienen las respuestas.
+        </p>
+
+      </section>
+
+      <!-- AVISO DE LIMITACIONES -->
+      <div class="limit-banner">
+        <span>ⓘ</span>
+
+        <div>
+          <strong>Importante:</strong>
+          Soy una inteligencia artificial y puedo cometer errores o entregar información imprecisa.
+          Verifica los datos importantes en las fuentes originales.
+        </div>
+      </div>
+
+      <!-- NAVEGACIÓN ENTRE ESTADOS -->
+      <section class="state-lab">
+
+        <div class="lab-heading">
+          <strong>LABORATORIO DE ESTADOS</strong>
+          <span>Selecciona un estado para revisar el comportamiento.</span>
+        </div>
+
+        <div class="state-buttons">
+
+          <button class="state-btn" data-state="empty" aria-pressed="true">
+            01 · Vacío
+          </button>
+
+          <button class="state-btn" data-state="loading" aria-pressed="false">
+            02 · Cargando
+          </button>
+
+          <button class="state-btn" data-state="answer" aria-pressed="false">
+            03 · Respuesta
+          </button>
+
+          <button class="state-btn" data-state="error" aria-pressed="false">
+            04 · No sé / Error
+          </button>
+
+        </div>
+
+      </section>
+
+      <!-- CHAT -->
+      <section class="chat-card">
+
+        <div class="chat-head">
+
+          <div class="assistant-id">
+
+            <div class="assistant-icon">✳</div>
+
+            <div>
+              <strong>NEXUS Assistant</strong>
+              <small>Asistente de información interna</small>
+            </div>
+
+          </div>
+
+          <span class="online">Prototipo activo</span>
+
+        </div>
+
+        <!-- AQUÍ SE MUESTRAN LOS ESTADOS -->
+        <div class="conversation" id="conversation" aria-live="polite">
+        </div>
+
+        <!-- CAMPO PARA ESCRIBIR -->
+        <form class="composer" id="question-form">
+
+          <input
+            id="question"
+            type="text"
+            autocomplete="off"
+            aria-label="Escribe tu pregunta"
+            placeholder="Escribe tu pregunta aquí..."
+          >
+
+          <button class="send-btn" type="submit" aria-label="Enviar pregunta">
+            ↑
+          </button>
+
+        </form>
+
+        <div class="composer-hint">
+          <span>Enter para enviar · Prueba con cualquier pregunta</span>
+          <span>Datos demostrativos</span>
+        </div>
+
+      </section>
+
+      <p class="footnote">
+        NEXUS AI · Prototipo UX/UI sin conexión a un modelo de inteligencia artificial.
+      </p>
+
+    </main>
+
+  </div>
+
+  <script>
+
+    // ELEMENTOS DEL DOM
+
+    const conversation = document.getElementById("conversation");
+
+    const questionInput = document.getElementById("question");
+
+    const stateButtons = document.querySelectorAll(".state-btn");
+
+    const form = document.getElementById("question-form");
+
+    let lastQuestion = "¿Cuándo es la sesión de IA?";
+
+    let loadingTimer;
+
+
+    // CAMBIAR ENTRE ESTADOS
+
+    function setState(state, question = lastQuestion) {
+
+      clearTimeout(loadingTimer);
+
+      lastQuestion = question || lastQuestion;
+
+      stateButtons.forEach(button => {
+
+        button.setAttribute(
+          "aria-pressed",
+          String(button.dataset.state === state)
+        );
+
+      });
+
+      if (state === "empty") renderEmpty();
+
+      if (state === "loading") renderLoading();
+
+      if (state === "answer") renderAnswer(lastQuestion);
+
+      if (state === "error") renderError(lastQuestion);
+
+    }
+
+
+    // ESTADO 1: VACÍO
+
+    function renderEmpty() {
+
+      conversation.innerHTML = `
+
+        <div class="welcome">
+
+          <div class="welcome-symbol">✳</div>
+
+          <h2>Empieza una conversación</h2>
+
+          <p>
+            Puedo orientarte sobre procesos, fechas y documentos del equipo.
+            Escribe una pregunta o prueba con este ejemplo.
+          </p>
+
+          <button class="example-chip" id="example-question">
+            ✦ ¿Cuándo es la sesión de IA?
+          </button>
+
+        </div>
+
+      `;
+
+      document
+        .getElementById("example-question")
+        .addEventListener("click", () => {
+
+          questionInput.value = "¿Cuándo es la sesión de IA?";
+
+          submitQuestion();
+
+        });
+
+    }
+
+
+    // ESTADO 2: CARGANDO
+
+    function renderLoading() {
+
+      conversation.innerHTML = `
+
+        <div class="loading-state" role="status">
+
+          <div class="loader"></div>
+
+          <strong>Pensando…</strong>
+
+          <p>
+            Estamos revisando la información disponible.
+          </p>
+
+        </div>
+
+      `;
+
+    }
+
+
+    // ESTADO 3: RESPUESTA
+
+    function renderAnswer(question) {
+
+      conversation.innerHTML = `
+
+        <div class="message">
+
+          <div class="user-query"></div>
+
+          <article class="answer-box">
+
+            <div class="answer-label">
+              ● RESPUESTA DE DEMOSTRACIÓN
+            </div>
+
+            <h2>
+              La sesión de IA está programada para el jueves a las 10:00 a. m.
+            </h2>
+
+            <p>
+              La reunión se realizará en la sala de formación.
+              Llega unos minutos antes para comprobar tu acceso.
+            </p>
+
+            <p class="uncertainty">
+              Este contenido es ficticio y solo demuestra la presentación
+              de una respuesta. Confirma la fecha en el calendario oficial
+              antes de actuar.
+            </p>
+
+          </article>
+
+          <div class="source-card" id="fuentes">
+
+            <div>
+
+              <span class="source-kicker">
+                Fuente consultada · Ejemplo
+              </span>
+
+              <a
+                class="source-title"
+                href="https://example.com/documentos/calendario-sesiones-ia.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Calendario de sesiones de IA.pdf ↗
+              </a>
+
+              <span class="source-detail">
+                Documento de demostración. Reemplazar por el documento real.
+              </span>
+
+            </div>
+
+            <span class="source-tag">
+              Referencia
+            </span>
+
+          </div>
+
+        </div>
+
+      `;
+
+      conversation.querySelector(".user-query").textContent = question;
+
+    }
+
+
+    // ESTADO 4: ERROR / NO SÉ
+
+    function renderError(question) {
+
+      conversation.innerHTML = `
+
+        <div class="message">
+
+          <div class="user-query" id="unanswered-question"></div>
+
+          <div class="error-box" id="ayuda">
+
+            <div class="error-symbol">?</div>
+
+            <h2>
+              No tengo información suficiente para responder
+            </h2>
+
+            <p>
+              Tu pregunta sí fue recibida, pero esta demostración
+              no tiene información para responderla.
+              Prefiero no inventar datos.
+              Puedes reformularla o pedir ayuda a una persona del equipo.
+            </p>
+
+            <div class="error-actions">
+
+              <button class="btn btn-primary" id="retry">
+                ↻ Reintentar
+              </button>
+
+              <button class="btn btn-secondary" id="rephrase">
+                ✎ Reformular pregunta
+              </button>
+
+              <a
+                class="btn btn-secondary"
+                href="mailto:soporte@empresa.com?subject=Ayuda%20con%20NEXUS%20AI"
+              >
+                Hablar con una persona ↗
+              </a>
+
+            </div>
+
+            <p style="margin-top:13px;font-size:10px;">
+              Canal de soporte de ejemplo: reemplaza este correo
+              por el canal real de tu organización.
+            </p>
+
+          </div>
+
+        </div>
+
+      `;
+
+      document.getElementById("unanswered-question").textContent = question;
+
+      // REINTENTAR
+
+      document.getElementById("retry").addEventListener("click", () => {
+
+        setState("loading", lastQuestion);
+
+        loadingTimer = setTimeout(() => {
+
+          setState("error", lastQuestion);
+
+        }, 1000);
+
+      });
+
+      // REFORMULAR
+
+      document.getElementById("rephrase").addEventListener("click", () => {
+
+        questionInput.value = lastQuestion;
+
+        questionInput.focus();
+
+        questionInput.select();
+
+      });
+
+    }
+
+
+    // ENVIAR PREGUNTA
+
+    function submitQuestion() {
+
+      const question = questionInput.value.trim();
+
+      if (!question) {
+
+        questionInput.focus();
+
+        return;
+
+      }
+
+      lastQuestion = question;
+
+      // Mostrar el estado de carga
+
+      setState("loading", question);
+
+      // Limpiar el campo para permitir otra pregunta
+
+      questionInput.value = "";
+
+
+      // SIMULACIÓN LOCAL
+
+      // No hay conexión con ningún modelo de IA.
+      // Solo la pregunta de ejemplo tiene una respuesta ficticia.
+      // Cualquier otra pregunta muestra honestamente el estado "No sé".
+
+      loadingTimer = setTimeout(() => {
+
+        const isDemoQuestion =
+          /cuándo es la sesión de ia|cuando es la sesion de ia/i.test(question);
+
+        if (isDemoQuestion) {
+
+          setState("answer", question);
+
+        } else {
+
+          setState("error", question);
+
+        }
+
+      }, 1400);
+
+    }
+
+
+    // EVENTO DEL FORMULARIO
+
+    form.addEventListener("submit", event => {
+
+      event.preventDefault();
+
+      submitQuestion();
+
+    });
+
+
+    // BOTONES PARA CAMBIAR MANUALMENTE DE ESTADO
+
+    stateButtons.forEach(button => {
+
+      button.addEventListener("click", () => {
+
+        setState(button.dataset.state);
+
+      });
+
+    });
+
+
+    // INICIAR EN ESTADO VACÍO
+
+    renderEmpty();
+
+  </script>
+
+</body>
+</html>
